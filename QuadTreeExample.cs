@@ -5,7 +5,7 @@ public class QuadTreeExample
     public static void Run()
     {
         // Инициализация системы с глубиной 3
-        var system = new QuadTreeAddressSystem(depth: 3);
+        var system = new QuadTreeAddressSystem(depth: 4);
 
         // Добавление данных
         system.AddData(0.2, 0.8, "Объект 1");  // Адрес: AAA
@@ -24,6 +24,16 @@ public class QuadTreeExample
         Console.WriteLine("Данные в регионе: " +
             string.Join(", ", system.QueryRegion(0.5, 1.0, 0.0, 0.5)));  // ["Объект 3"]
 
+        // Add to known location
+        system.AddDataByAddress("AACA", "Weather Station");
+
+        // Mixed approach
+        system.AddData(0.15, 0.85, "Radar Tower");  // Automatically calculates address
+
+        // Verify additions
+        Console.WriteLine("AACA contents: " + 
+            string.Join(", ", system.GetByAddress("AACA")));
+        // Output: Weather Station, Radar Tower (if same address)
         // Преобразование адреса в границы
         while (true)
         {

@@ -311,6 +311,286 @@ Operation | 100K points | 1M points | 10M points
 
 The Octree Address System provides a powerful foundation for working with volumetric data in scientific, medical, and gaming applications where efficient 3D spatial indexing is critical.
 
+
+==================================
+
+# 📦 Add Data by Address Methods
+
+I've added methods to both QuadTree and Octree systems that allow adding data directly by address, bypassing coordinate conversion. This is useful when you already know the spatial hierarchy location.
+
+## QuadTreeAddressSystem Update
+
+```csharp
+public class QuadTreeAddressSystem
+{
+    // ... existing methods and properties ...
+
+    /// <summary>
+    /// Add data directly to a specific address without coordinates
+    /// </summary>
+    /// <param name="address">Target address (must match system depth)</param>
+    /// <param name="data">Data to store</param>
+    public void AddDataByAddress(string address, object data)
+    {
+        ValidateAddress(address);
+        
+        if (!storage.ContainsKey(address))
+        {
+            storage[address] = new List<object>();
+        }
+        storage[address].Add(data);
+    }
+
+    /// <summary>
+    /// Validate address format and length
+    /// </summary>
+    private void ValidateAddress(string address)
+    {
+        if (address.Length != depth)
+        {
+            throw new ArgumentException($"Address length must be {depth}. Got {address.Length}");
+        }
+
+        foreach (char c in address)
+        {
+            if (c != 'A' && c != 'B' && c != 'C' && c != 'D')
+            {
+                throw new ArgumentException($"Invalid character '{c}' in address. Only A,B,C,D allowed");
+            }
+        }
+    }
+
+    // ... rest of the class ...
+}
+```
+
+## OctreeAddressSystem Update
+
+```csharp
+public class OctreeAddressSystem
+{
+    // ... existing methods and properties ...
+
+    /// <summary>
+    /// Add data directly to a specific 3D address
+    /// </summary>
+    /// <param name="address">Target octree address</param>
+    /// <param name="data">Data to store</param>
+    public void AddDataByAddress(string address, object data)
+    {
+        ValidateAddress(address);
+        
+        if (!storage.ContainsKey(address))
+        {
+            storage[address] = new List<object>();
+        }
+        storage[address].Add(data);
+    }
+
+    /// <summary>
+    /// Validate 3D address format
+    /// </summary>
+    private void ValidateAddress(string address)
+    {
+        if (address.Length != depth)
+        {
+            throw new ArgumentException($"Address length must be {depth}. Got {address.Length}");
+        }
+
+        foreach (char c in address)
+        {
+            if (c < 'A' || c > 'H')
+            {
+                throw new ArgumentException($"Invalid character '{c}' in address. Only A-H allowed");
+            }
+        }
+    }
+
+    // ... rest of the class ...
+}
+```
+
+## Use Case Examples
+
+### QuadTree Usage
+```csharp
+var quadSystem = new QuadTreeAddressSystem(depth: 4);
+
+// Add to known location
+quadSystem.AddDataByAddress("AACA", "Weather Station");
+
+// Mixed approach
+quadSystem.AddData(0.15, 0.85, "Radar Tower");  // Automatically calculates address
+
+// Verify additions
+Console.WriteLine("AACA contents: " + 
+    string.Join(", ", quadSystem.GetByAddress("AACA")));
+// Output: Weather Station, Radar Tower (if same address)
+```
+
+### Octree Usage
+```csharp
+var octreeSystem = new OctreeAddressSystem(depth: 5);
+
+// Add to known 3D location
+octreeSystem.AddDataByAddress("ABGHE", "CT Scan Data");
+
+// Add through coordinates
+octreeSystem.AddData(0.35, 0.45, 0.25, "MRI Scan");
+
+// Batch add to same location
+string researchCube = "CDEFG";
+octreeSystem.AddDataByAddress(researchCube, "Sample 1");
+octreeSystem.AddDataByAddress(researchCube, "Sample 2");
+octreeSystem.AddDataByAddress(researchCube, "Sample 3");
+
+// Retrieve research data
+Console.WriteLine($"Research cube contains {octreeSystem.GetByAddress(researchCube).Count} items");
+// Output: Research cube contains 3 items
+```
+
+## Key Features
+
+1. **Direct Address Access**
+   - Bypass coordinate conversion when address is known
+   - Useful for pre-calculated spatial hierarchies
+   - Efficient for bulk loading data
+
+2. **Address Validation**
+   - Length verification (must match system depth)
+   - Character range checking (A-D for Quad, A-H for Octree)
+   - Meaningful error messages
+
+3. **Mixed Mode Operations**
+   - Combine coordinate-based and address-based insertion
+   - Seamless integration with existing query methods
+
+4. **Use Case Scenarios**
+   - Loading pre-indexed datasets
+   - Rehydrating serialized spatial data
+   - Distributed system coordination
+   - Spatial data migration
+
+## Typical Workflows
+
+### Data Migration Workflow
+```mermaid
+sequenceDiagram
+    participant LegacySystem
+    participant MigrationTool
+    participant QuadTreeSystem
+    
+    LegacySystem->>MigrationTool: Export spatial data
+    Note right of MigrationTool: Convert coordinates → addresses
+    MigrationTool->>QuadTreeSystem: AddDataByAddress("BBCC", item)
+    MigrationTool->>QuadTreeSystem: AddDataByAddress("AADD", item)
+    MigrationTool->>QuadTreeSystem: ... batch insert ...
+```
+
+### Distributed Processing
+```mermaid
+graph TD
+    A[Master Node] -->|Partition Space| B(Worker 1: Sector AAA)
+    A --> C(Worker 2: Sector AAB)
+    A --> D(Worker 3: Sector AAC)
+    
+    B -->|Processed Data| E[Storage: AAA]
+    C -->|Processed Data| F[Storage: AAB]
+    D -->|Processed Data| G[Storage: AAC]
+    
+    E --> H[Aggregation Node]
+    F --> H
+    G --> H
+```
+
+## Error Handling Cases
+
+1. **Invalid Address Length**
+   ```csharp
+   try
+   {
+       octree.AddDataByAddress("ABC", "ShortAddress"); // Depth=5 expected
+   }
+   catch (ArgumentException ex)
+   {
+       Console.WriteLine(ex.Message);
+       // "Address length must be 5. Got 3"
+   }
+   ```
+
+2. **Invalid Characters**
+   ```csharp
+   try
+   {
+       quad.AddDataByAddress("AXBD", "InvalidChar"); // 'X' not allowed
+   }
+   catch (ArgumentException ex)
+   {
+       Console.WriteLine(ex.Message);
+       // "Invalid character 'X' in address. Only A,B,C,D allowed"
+   }
+   ```
+
+3. **Case Sensitivity**
+   ```csharp
+   // Systems are case-sensitive
+   quad.AddDataByAddress("aabc", "Lowercase"); // Throws exception!
+   quad.AddDataByAddress("AABC", "Uppercase"); // Works
+   ```
+
+## Performance Considerations
+
+Operation | Complexity | Notes
+----------|------------|-------
+`AddDataByAddress` | O(1) | Dictionary insert
+Address Validation | O(n) | n = address length
+Error Handling | Constant time | Pre-checks before insertion
+Storage Expansion | Amortized O(1) | Dictionary resizing
+
+## Real-World Applications
+
+### 🗺️ Geographic Data Systems
+```csharp
+// Pre-calculated map tile addresses
+var tileSystem = new QuadTreeAddressSystem(10);
+foreach (var tile in importedMapTiles)
+{
+    tileSystem.AddDataByAddress(tile.Address, tile.ImageData);
+}
+```
+
+### 🧪 Scientific Simulations
+```csharp
+// Distributed 3D fluid simulation
+var fluidSystem = new OctreeAddressSystem(6);
+Parallel.ForEach(simulationChunks, chunk =>
+{
+    fluidSystem.AddDataByAddress(chunk.Address, chunk.Results);
+});
+```
+
+### 🎮 Game Level Streaming
+```csharp
+// Load game assets by spatial location
+var worldPartition = new OctreeAddressSystem(4);
+worldPartition.AddDataByAddress("ABCE", LoadTextures("region_abce"));
+worldPartition.AddDataByAddress("ABCF", LoadModels("region_abcf"));
+worldPartition.AddDataByAddress("ABCG", LoadAudio("region_abcg"));
+```
+
+### 🏥 Medical Data Management
+```csharp
+// Organ-specific data storage
+var anatomyModel = new OctreeAddressSystem(7);
+anatomyModel.AddDataByAddress("CDFGABA", new LiverSegment(
+    position: 3, 
+    biomarkers: bioData
+));
+```
+
+These additions enable more flexible data ingestion patterns and support advanced use cases where spatial relationships are known prior to data insertion. The address-based approach complements the coordinate-based method to create a comprehensive spatial indexing solution.
+
+
 ## 🚧 Limitations & Future Work
 
 - **Current**: 2D space only

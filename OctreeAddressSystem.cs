@@ -77,7 +77,7 @@ public class OctreeAddressSystem
         return new string(address);
     }
 
-    public (double xmin, double xmax, double ymin, double ymax, double zmin, double zmax) 
+    public (double xmin, double xmax, double ymin, double ymax, double zmin, double zmax)
         AddressToBBox(string address)
     {
         double xmin = 0.0, ymin = 0.0, zmin = 0.0;
@@ -147,27 +147,61 @@ public class OctreeAddressSystem
     }
 
     public List<object> QueryRegion(
-        double qxmin, double qxmax, 
+        double qxmin, double qxmax,
         double qymin, double qymax,
         double qzmin, double qzmax)
     {
         var results = new List<object>();
-        
+
         foreach (var kvp in storage)
         {
             var (axmin, axmax, aymin, aymax, azmin, azmax) = AddressToBBox(kvp.Key);
-            
+
             // Check for 3D overlap
             bool xOverlap = axmin < qxmax && axmax > qxmin;
             bool yOverlap = aymin < qymax && aymax > qymin;
             bool zOverlap = azmin < qzmax && azmax > qzmin;
-            
+
             if (xOverlap && yOverlap && zOverlap)
             {
                 results.AddRange(kvp.Value);
             }
         }
-        
+
         return results;
+    }
+    
+    /// Add data directly to a specific 3D address
+    /// </summary>
+    /// <param name="address">Target octree address</param>
+    /// <param name="data">Data to store</param>
+    public void AddDataByAddress(string address, object data)
+    {
+        ValidateAddress(address);
+        
+        if (!storage.ContainsKey(address))
+        {
+            storage[address] = new List<object>();
+        }
+        storage[address].Add(data);
+    }
+
+    /// <summary>
+    /// Validate 3D address format
+    /// </summary>
+    private void ValidateAddress(string address)
+    {
+        if (address.Length != depth)
+        {
+            throw new ArgumentException($"Address length must be {depth}. Got {address.Length}");
+        }
+
+        foreach (char c in address)
+        {
+            if (c < 'A' || c > 'H')
+            {
+                throw new ArgumentException($"Invalid character '{c}' in address. Only A-H allowed");
+            }
+        }
     }
 }

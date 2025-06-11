@@ -144,4 +144,39 @@ public class QuadTreeAddressSystem
         // Возвращайте 6 границ (x,y,z)
         throw new NotImplementedException();
     }
+
+    /// <summary>
+    /// Add data directly to a specific address without coordinates
+    /// </summary>
+    /// <param name="address">Target address (must match system depth)</param>
+    /// <param name="data">Data to store</param>
+    public void AddDataByAddress(string address, object data)
+    {
+        ValidateAddress(address);
+        
+        if (!storage.ContainsKey(address))
+        {
+            storage[address] = new List<object>();
+        }
+        storage[address].Add(data);
+    }
+
+    /// <summary>
+    /// Validate address format and length
+    /// </summary>
+    private void ValidateAddress(string address)
+    {
+        if (address.Length != depth)
+        {
+            throw new ArgumentException($"Address length must be {depth}. Got {address.Length}");
+        }
+
+        foreach (char c in address)
+        {
+            if (c != 'A' && c != 'B' && c != 'C' && c != 'D')
+            {
+                throw new ArgumentException($"Invalid character '{c}' in address. Only A,B,C,D allowed");
+            }
+        }
+    }
 }
